@@ -9,16 +9,16 @@
 
 A comprehensive script extender for **Vampire: The Masquerade - Bloodlines 2**, enabling Lua scripting, C++ modding, and Blueprint mod loading.
 
-## ✨ Features
+## Features
 
-- **🐍 Lua Scripting** - Write mods in Lua with full access to game systems
-- **⚙️ VTMB2 API** - High-level API for player, abilities, dialogue, and quests
-- **🔄 Hot Reload** - Reload scripts without restarting the game
-- **📦 Blueprint Mods** - Load .pak mods without file replacement
-- **🖥️ Developer Console** - In-game console for debugging
-- **👁️ Live Viewer** - Inspect and edit game objects in real-time
+- **Lua Scripting** - Write mods in Lua with full access to game systems
+- **VTMB2 API** - High-level API for player, abilities, dialogue, and quests
+- **Hot Reload** - Reload scripts without restarting the game
+- **Blueprint Mods** - Load .pak mods without file replacement
+- **Developer Console** - In-game console for debugging
+- **Live Viewer** - Inspect and edit game objects in real-time
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -55,7 +55,7 @@ end)
 3. Create empty `enabled.txt` file
 4. Launch the game!
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -64,7 +64,7 @@ end)
 | [Game Classes](docs/GAME_CLASSES.md) | Discovered game class documentation |
 | [Examples](docs/EXAMPLES.md) | Example mods and code snippets |
 
-## 🎮 VTMB2 Lua API
+## VTMB2 Lua API
 
 ```lua
 local VTMB2 = require("VTMB2.VTMB2")
@@ -86,7 +86,7 @@ VTMB2.Events.OnPlayerSpawn(function(player)
 end)
 ```
 
-## 🛠️ For Mod Developers
+## For Mod Developers
 
 ### SDK Contents
 
@@ -105,7 +105,7 @@ Mods/YourMod/
 └── config.json       # Optional configuration
 ```
 
-## 🔧 Building from Source
+## Building from Source
 
 For C++ mod development or contributing to VTMB2SE:
 
@@ -114,22 +114,16 @@ For C++ mod development or contributing to VTMB2SE:
 3. Link GitHub to [Epic Games](https://www.epicgames.com/account/connections) (for UEPseudo)
 4. Clone with submodules: `git clone --recursive https://github.com/Jessomadic/VTMB2-Script-Extender.git`
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
 ### Credits
 
-- **[UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)** - The amazing UE4/UE5 Scripting System
+- **[UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)** - The UE4/UE5 Scripting System
 - **[VTMB2 Modding Community](https://discord.gg/vtmb)** - For research and support
 - **Paradox Interactive / The Chinese Room** - For creating VTMB2
-
----
-
-<p align="center">
-  <i>May your nights be eternal and your code compile without errors. 🧛</i>
-</p>
