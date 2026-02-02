@@ -409,8 +409,8 @@ local function RunAllTests()
     GenerateSummary()
 end
 
--- Keybind to run tests - Using INSERT instead of F11 (F11 toggles UE4SS window)
-RegisterKeyBind(Key.INSERT, function()
+-- Keybind to run tests - Using INS instead of F11 (F11 toggles UE4SS window)
+RegisterKeyBind(Key.INS, function()
     RunAllTests()
 end)
 

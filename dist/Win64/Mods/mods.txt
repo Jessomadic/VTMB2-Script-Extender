@@ -20,7 +20,7 @@ VTMB2SE_Core : 1
 VTMB2SE_Validation : 1
 
 ; === VTMB2SE Examples (disable in production) ===
-VTMB2SE_Examples : 0
+VTMB2SE_Examples : 1
 
 ; === Your Mods Go Below ===
 
