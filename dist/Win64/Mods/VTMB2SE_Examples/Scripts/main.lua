@@ -1,18 +1,15 @@
 --[[
-    VTMB2SE Example Mod
+    VTMB2SE Example Mod (Extended)
     
-    Demonstrates how to use the VTMB2 API for modding.
-    
-    Features demonstrated:
-    - Loading VTMB2 API
-    - Player access
-    - Keybind registration
-    - Event callbacks
-    - Configuration
+    Demonstrates the full VTMB2 API including:
+    - Player attributes (Health, Blood, Shield, etc.)
+    - Movement system (Walk/Sprint/Crouch speeds)
+    - Combat stats (Attack Power, Damage)
+    - World queries
 ]]--
 
 local ModName = "VTMB2SE_Examples"
-local ModVersion = "0.1.0"
+local ModVersion = "0.2.0"
 
 -- Load VTMB2 API
 local VTMB2 = require("VTMB2.VTMB2")
@@ -31,24 +28,110 @@ local Config = {
     FastSpeed = 1200,
     SuperSpeed = 2000,
     
-    -- Feature toggles
-    EnableSpeedMod = true,
-    EnableHealthDisplay = true,
+    -- God mode settings
+    GodModeHealth = 99999,
+    GodModeBlood = 99999,
+}
+
+-- State
+local State = {
+    godMode = false,
+    infiniteBlood = false,
+    originalSpeed = nil,
+    speedMode = "normal",
 }
 
 --[[============================================================================
-    Speed Modification Example
+    Attribute Display
 ============================================================================]]--
 
-local currentSpeedMode = "normal"
-
-local function SetSpeedMode(mode)
-    local player = VTMB2.GetPlayer()
-    if not player then
-        Log.Warn("Player not found - are you in game?")
+local function ShowAllAttributes()
+    Log.Log("========== PLAYER ATTRIBUTES ==========")
+    
+    local attrs = VTMB2.Attributes.GetAll()
+    if not attrs or next(attrs) == nil then
+        Log.Warn("Could not retrieve attributes - player may not be loaded")
         return
     end
     
+    -- Group by category
+    local categories = {
+        Health = {"Health", "MaxHealth", "HealthRegenRate", "HealthRegenValue", "HealthFragility"},
+        Blood = {"Blood", "MaxBlood"},
+        Shield = {"Shield", "MaxShield"},
+        Stun = {"stun", "MaxStun", "StunDamage", "StunResistance", "MaxStunResistance"},
+        Armor = {"Armor", "MaxArmor", "ArmorDamage"},
+        Combat = {"AttackPower", "Damage", "DamageCap"},
+        Movement = {"WalkSpeed", "SprintSpeed", "CrouchSpeed", "AccelerationRate"},
+        Ammo = {"Ammo", "MaxAmmo"},
+        Abilities = {"StrikeAbilityBlood", "RelocateAbilityBlood", "MasteryAbilityBlood", "AffectAbilityBlood"},
+        Stealth = {"Noticeability"},
+    }
+    
+    for catName, attrNames in pairs(categories) do
+        local hasAny = false
+        for _, attrName in ipairs(attrNames) do
+            if attrs[attrName] then
+                hasAny = true
+                break
+            end
+        end
+        
+        if hasAny then
+            Log.Log("--- " .. catName .. " ---")
+            for _, attrName in ipairs(attrNames) do
+                local value = attrs[attrName]
+                if value ~= nil then
+                    Log.Log("  " .. attrName .. ": " .. tostring(value))
+                end
+            end
+        end
+    end
+    
+    Log.Log("========================================")
+end
+
+local function ShowPlayerInfo()
+    Log.Log("========== PLAYER INFO ==========")
+    
+    local player = VTMB2.GetPlayer()
+    if not player then
+        Log.Warn("Player not found")
+        return
+    end
+    
+    Log.Log("Player: " .. Utils.GetFullName(player))
+    Log.Log("Class: " .. Utils.GetClassName(player))
+    Log.Log("Dead: " .. tostring(VTMB2.Player.IsDead()))
+    Log.Log("In Combat: " .. tostring(VTMB2.Player.IsInCombat()))
+    
+    -- Quick stats
+    Log.Log("--- Quick Stats ---")
+    local health = VTMB2.Player.GetHealth()
+    local maxHealth = VTMB2.Player.GetMaxHealth()
+    if health and maxHealth then
+        Log.Log("Health: " .. health .. " / " .. maxHealth)
+    end
+    
+    local blood = VTMB2.Player.GetBlood()
+    local maxBlood = VTMB2.Player.GetMaxBlood()
+    if blood and maxBlood then
+        Log.Log("Blood: " .. blood .. " / " .. maxBlood)
+    end
+    
+    local walkSpeed = VTMB2.Movement.GetWalkSpeed()
+    if walkSpeed then
+        Log.Log("Walk Speed: " .. walkSpeed)
+    end
+    
+    Log.Log("=================================")
+end
+
+--[[============================================================================
+    Movement Functions
+============================================================================]]--
+
+local function SetSpeedMode(mode)
     local speed
     if mode == "fast" then
         speed = Config.FastSpeed
@@ -59,79 +142,158 @@ local function SetSpeedMode(mode)
         mode = "normal"
     end
     
-    local success = VTMB2.Player.SetWalkSpeed(speed)
+    local success = VTMB2.Movement.SetWalkSpeed(speed)
     if success then
-        currentSpeedMode = mode
+        State.speedMode = mode
         Log.Log("Speed set to: " .. mode .. " (" .. speed .. ")")
     else
-        Log.Warn("Failed to set speed - movement component not found")
+        Log.Warn("Failed to set speed")
     end
 end
 
 local function CycleSpeed()
-    if currentSpeedMode == "normal" then
+    if State.speedMode == "normal" then
         SetSpeedMode("fast")
-    elseif currentSpeedMode == "fast" then
+    elseif State.speedMode == "fast" then
         SetSpeedMode("super")
     else
         SetSpeedMode("normal")
     end
 end
 
---[[============================================================================
-    Player Info Display Example
-============================================================================]]--
-
-local function ShowPlayerInfo()
-    Log.Log("===== Player Info =====")
+local function ShowMovementInfo()
+    Log.Log("========== MOVEMENT INFO ==========")
     
-    local player = VTMB2.GetPlayer()
-    if not player then
-        Log.Log("Player: Not found")
-        Log.Log("=======================")
-        return
-    end
+    Log.Log("Walk Speed: " .. tostring(VTMB2.Movement.GetWalkSpeed()))
+    Log.Log("Sprint Speed: " .. tostring(VTMB2.Movement.GetSprintSpeed()))
+    Log.Log("Crouch Speed: " .. tostring(VTMB2.Movement.GetCrouchSpeed()))
+    Log.Log("Jump Z Velocity: " .. tostring(VTMB2.Movement.GetJumpZVelocity()))
+    Log.Log("Gravity Scale: " .. tostring(VTMB2.Movement.GetGravityScale()))
+    Log.Log("Acceleration: " .. tostring(VTMB2.Movement.GetAcceleration()))
+    Log.Log("Ground Friction: " .. tostring(VTMB2.Movement.GetGroundFriction()))
     
-    Log.Log("Player: " .. Utils.GetFullName(player))
-    Log.Log("Class: " .. Utils.GetClassName(player))
+    Log.Log("--- State ---")
+    Log.Log("Sprinting: " .. tostring(VTMB2.Movement.IsSprinting()))
+    Log.Log("Crouching: " .. tostring(VTMB2.Movement.IsCrouching()))
+    Log.Log("Gliding: " .. tostring(VTMB2.Movement.IsGliding()))
     
-    -- Health
-    local health = VTMB2.Player.GetHealth()
-    if health then
-        Log.Log("Health: " .. tostring(health))
-    else
-        Log.Log("Health: Unknown")
-    end
-    
-    -- Blood
-    local blood = VTMB2.Player.GetBlood()
-    if blood then
-        Log.Log("Blood: " .. tostring(blood))
-    else
-        Log.Log("Blood: Unknown")
-    end
-    
-    -- Speed
-    local speed = VTMB2.Player.GetWalkSpeed()
-    if speed then
-        Log.Log("Walk Speed: " .. tostring(speed))
-    else
-        Log.Log("Walk Speed: Unknown")
-    end
-    
-    Log.Log("=======================")
+    Log.Log("===================================")
 end
 
 --[[============================================================================
-    Event Callback Examples
+    God Mode / Cheats
 ============================================================================]]--
 
--- Called when player spawns
+local function ToggleGodMode()
+    State.godMode = not State.godMode
+    
+    if State.godMode then
+        Log.Log("GOD MODE: ENABLED")
+        VTMB2.Attributes.SetMaxHealth(Config.GodModeHealth)
+        VTMB2.Attributes.SetHealth(Config.GodModeHealth)
+    else
+        Log.Log("GOD MODE: DISABLED")
+        -- Note: doesn't restore original values
+    end
+end
+
+local function ToggleInfiniteBlood()
+    State.infiniteBlood = not State.infiniteBlood
+    
+    if State.infiniteBlood then
+        Log.Log("INFINITE BLOOD: ENABLED")
+        VTMB2.Attributes.SetMaxBlood(Config.GodModeBlood)
+        VTMB2.Attributes.SetBlood(Config.GodModeBlood)
+    else
+        Log.Log("INFINITE BLOOD: DISABLED")
+    end
+end
+
+local function HealPlayer()
+    local maxHealth = VTMB2.Player.GetMaxHealth()
+    if maxHealth then
+        VTMB2.Player.SetHealth(maxHealth)
+        Log.Log("Healed to full: " .. maxHealth)
+    else
+        Log.Warn("Could not heal - max health unknown")
+    end
+end
+
+local function RefillBlood()
+    local maxBlood = VTMB2.Player.GetMaxBlood()
+    if maxBlood then
+        VTMB2.Player.SetBlood(maxBlood)
+        Log.Log("Blood refilled to: " .. maxBlood)
+    else
+        Log.Warn("Could not refill blood - max blood unknown")
+    end
+end
+
+--[[============================================================================
+    World Queries
+============================================================================]]--
+
+local function ShowWorldInfo()
+    Log.Log("========== WORLD INFO ==========")
+    
+    local enemies = VTMB2.World.GetAllEnemies()
+    Log.Log("Enemy Count: " .. #enemies)
+    
+    local npcs = VTMB2.World.GetAllNPCs()
+    Log.Log("NPC Count: " .. #npcs)
+    
+    local gameMode = VTMB2.World.GetGameMode()
+    if gameMode then
+        Log.Log("Game Mode: " .. Utils.GetClassName(gameMode))
+    end
+    
+    local gameState = VTMB2.World.GetGameState()
+    if gameState then
+        Log.Log("Game State: " .. Utils.GetClassName(gameState))
+    end
+    
+    local cheatManager = VTMB2.World.GetCheatManager()
+    if cheatManager then
+        Log.Log("Cheat Manager: " .. Utils.GetClassName(cheatManager))
+    else
+        Log.Log("Cheat Manager: Not found")
+    end
+    
+    Log.Log("================================")
+end
+
+--[[============================================================================
+    Combat Functions
+============================================================================]]--
+
+local function ShowCombatStats()
+    Log.Log("========== COMBAT STATS ==========")
+    
+    Log.Log("Attack Power: " .. tostring(VTMB2.Combat.GetAttackPower()))
+    Log.Log("Damage: " .. tostring(VTMB2.Combat.GetDamage()))
+    Log.Log("Stun Resistance: " .. tostring(VTMB2.Combat.GetStunResistance()))
+    Log.Log("Armor: " .. tostring(VTMB2.Attributes.GetArmor()))
+    Log.Log("Shield: " .. tostring(VTMB2.Attributes.GetShield()))
+    
+    Log.Log("==================================")
+end
+
+local function BoostAttackPower()
+    local current = VTMB2.Combat.GetAttackPower() or 100
+    local newPower = current * 2
+    VTMB2.Combat.SetAttackPower(newPower)
+    Log.Log("Attack Power boosted: " .. current .. " -> " .. newPower)
+end
+
+--[[============================================================================
+    Event Callbacks
+============================================================================]]--
+
 VTMB2.Events.OnPlayerSpawn(function(player)
     Log.Log("Player spawned!")
     Log.Log("Character: " .. Utils.GetFullName(player))
     
-    -- Example: Print initial stats
+    -- Show stats after short delay
     Utils.Delay(1000, function()
         ShowPlayerInfo()
     end)
@@ -152,21 +314,58 @@ local function RegisterKeybinds()
         CycleSpeed()
     end)
     
-    -- F7: Set normal speed
+    -- F7: Show all attributes
     RegisterKeyBind(Key.F7, function()
-        SetSpeedMode("normal")
+        ShowAllAttributes()
     end)
     
-    -- F8: Set fast speed
+    -- F8: Show movement info
     RegisterKeyBind(Key.F8, function()
-        SetSpeedMode("fast")
+        ShowMovementInfo()
+    end)
+    
+    -- F9: Heal player
+    RegisterKeyBind(Key.F9, function()
+        HealPlayer()
+    end)
+    
+    -- Numpad keys for advanced features
+    RegisterKeyBind(Key.NUM_ONE, function()
+        ToggleGodMode()
+    end)
+    
+    RegisterKeyBind(Key.NUM_TWO, function()
+        ToggleInfiniteBlood()
+    end)
+    
+    RegisterKeyBind(Key.NUM_THREE, function()
+        RefillBlood()
+    end)
+    
+    RegisterKeyBind(Key.NUM_FOUR, function()
+        ShowWorldInfo()
+    end)
+    
+    RegisterKeyBind(Key.NUM_FIVE, function()
+        ShowCombatStats()
+    end)
+    
+    RegisterKeyBind(Key.NUM_SIX, function()
+        BoostAttackPower()
     end)
     
     Log.Log("Keybinds registered:")
-    Log.Log("  F5  - Show player info")
-    Log.Log("  F6  - Cycle speed modes")
-    Log.Log("  F7  - Normal speed")
-    Log.Log("  F8  - Fast speed")
+    Log.Log("  F5     - Player Info")
+    Log.Log("  F6     - Cycle Speed")
+    Log.Log("  F7     - All Attributes")
+    Log.Log("  F8     - Movement Info")
+    Log.Log("  F9     - Heal Player")
+    Log.Log("  Num1   - Toggle God Mode")
+    Log.Log("  Num2   - Toggle Infinite Blood")
+    Log.Log("  Num3   - Refill Blood")
+    Log.Log("  Num4   - World Info")
+    Log.Log("  Num5   - Combat Stats")
+    Log.Log("  Num6   - Boost Attack Power")
 end
 
 --[[============================================================================
@@ -174,17 +373,16 @@ end
 ============================================================================]]--
 
 local function Initialize()
-    Log.Log("==============================")
+    Log.Log("======================================")
     Log.Log("  " .. ModName .. " v" .. ModVersion)
-    Log.Log("  VTMB2SE Example Mod")
-    Log.Log("==============================")
+    Log.Log("  VTMB2SE Extended Example Mod")
+    Log.Log("======================================")
     
     RegisterKeybinds()
     
-    Log.Log("Example mod loaded successfully!")
-    Log.Log("Press F5-F8 to test features")
-    Log.Log("==============================")
+    Log.Log("Example mod loaded!")
+    Log.Log("Use F5-F9 and Numpad 1-6 for features")
+    Log.Log("======================================")
 end
 
--- Run initialization
 Initialize()
