@@ -16,6 +16,9 @@ jsbLuaProfilerMod : 0
 ; === VTMB2SE Core ===
 VTMB2SE_Core : 1
 
+; === VTMB2SE Testing ===
+VTMB2SE_Validation : 1
+
 ; === VTMB2SE Examples (disable in production) ===
 VTMB2SE_Examples : 0
 
