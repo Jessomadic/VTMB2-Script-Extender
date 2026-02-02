@@ -300,6 +300,109 @@ VTMB2.Events.OnPlayerSpawn(function(player)
 end)
 
 --[[============================================================================
+    Debug Functions (must be defined before keybinds)
+============================================================================]]--
+
+-- Debug function to check what jump properties exist
+local function DebugJump()
+    Log.Log("========== DEBUG: JUMP PROPERTIES ==========")
+    
+    local player = VTMB2.GetPlayer()
+    if player then
+        Log.Log("Player class: " .. Utils.GetClassName(player))
+        
+        -- Check player properties
+        local jumpProps = {"JumpHeight", "bCanJump", "bCanJumpFromCrouch", "MinJumpHeightThreshold"}
+        for _, prop in ipairs(jumpProps) do
+            local val = player[prop]
+            Log.Log("  Player." .. prop .. " = " .. tostring(val) .. " (" .. type(val) .. ")")
+        end
+        
+        -- Try to set jump height
+        if player.JumpHeight ~= nil then
+            local oldVal = player.JumpHeight
+            player.JumpHeight = 1000
+            Log.Log("  Set JumpHeight 1000 (was " .. tostring(oldVal) .. ")")
+        end
+    end
+    
+    local movement = VTMB2.Player.GetMovementComponent()
+    if movement then
+        Log.Log("Movement class: " .. Utils.GetClassName(movement))
+        
+        -- Check movement properties
+        local moveProps = {"JumpZVelocity", "JumpHeight", "MaxWalkSpeed", "GravityScale"}
+        for _, prop in ipairs(moveProps) do
+            local val = movement[prop]
+            Log.Log("  Movement." .. prop .. " = " .. tostring(val) .. " (" .. type(val) .. ")")
+        end
+        
+        -- Try to set both
+        if movement.JumpZVelocity ~= nil then
+            local oldVal = movement.JumpZVelocity
+            movement.JumpZVelocity = 1500
+            Log.Log("  Set JumpZVelocity 1500 (was " .. tostring(oldVal) .. ")")
+        end
+    end
+    
+    -- Try via API
+    local height = VTMB2.Movement.GetJumpHeight()
+    Log.Log("API GetJumpHeight: " .. tostring(height))
+    
+    local success = VTMB2.Movement.SetJumpHeight(1500)
+    Log.Log("API SetJumpHeight(1500): " .. tostring(success))
+    
+    Log.Log("============================================")
+end
+
+-- Debug function to list all accessible player properties
+local function DebugPlayerProperties()
+    Log.Log("========== DEBUG: PLAYER PROPERTIES ==========")
+    
+    local player = VTMB2.GetPlayer()
+    if not player then
+        Log.Warn("No player found")
+        return
+    end
+    
+    Log.Log("Player: " .. Utils.GetFullName(player))
+    
+    -- Check if attribute set is accessible
+    local attrSet = nil
+    local attrSetNames = {"WrestlerAttributeSet", "AttributeSet", "AbilitySystemComponent"}
+    for _, name in ipairs(attrSetNames) do
+        if player[name] ~= nil then
+            attrSet = player[name]
+            Log.Log("Found: " .. name .. " = " .. type(attrSet))
+        end
+    end
+    
+    -- Check movement
+    local movement = player.CharacterMovement
+    if movement then
+        Log.Log("CharacterMovement found")
+        Log.Log("  MaxWalkSpeed: " .. tostring(movement.MaxWalkSpeed))
+        Log.Log("  JumpZVelocity: " .. tostring(movement.JumpZVelocity))
+    else
+        Log.Log("CharacterMovement: nil")
+    end
+    
+    -- Try direct properties on player that might affect damage
+    local combatProps = {
+        "AttackPower", "Damage", "BaseDamage", "DamageMultiplier",
+        "MeleeDamage", "RangeDamage", "AbilityDamage"
+    }
+    Log.Log("--- Combat Properties ---")
+    for _, prop in ipairs(combatProps) do
+        if player[prop] ~= nil then
+            Log.Log("  " .. prop .. " = " .. tostring(player[prop]))
+        end
+    end
+    
+    Log.Log("==============================================")
+end
+
+--[[============================================================================
     Keybind Setup
 ============================================================================]]--
 
@@ -354,6 +457,16 @@ local function RegisterKeybinds()
         BoostAttackPower()
     end)
     
+    -- Numpad 7: Super Jump test
+    RegisterKeyBind(Key.NUM_SEVEN, function()
+        DebugJump()
+    end)
+    
+    -- Numpad 8: Debug properties
+    RegisterKeyBind(Key.NUM_EIGHT, function()
+        DebugPlayerProperties()
+    end)
+    
     Log.Log("Keybinds registered:")
     Log.Log("  F5     - Player Info")
     Log.Log("  F6     - Cycle Speed")
@@ -366,6 +479,8 @@ local function RegisterKeybinds()
     Log.Log("  Num4   - World Info")
     Log.Log("  Num5   - Combat Stats")
     Log.Log("  Num6   - Boost Attack Power")
+    Log.Log("  Num7   - Super Jump Test")
+    Log.Log("  Num8   - Debug Properties")
 end
 
 --[[============================================================================

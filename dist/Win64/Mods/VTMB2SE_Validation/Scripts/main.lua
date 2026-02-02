@@ -409,17 +409,19 @@ local function RunAllTests()
     GenerateSummary()
 end
 
--- Keybind to run tests
-RegisterKeyBind(Key.F11, function()
+-- Keybind to run tests - Using INSERT instead of F11 (F11 toggles UE4SS window)
+RegisterKeyBind(Key.INSERT, function()
     RunAllTests()
 end)
 
 -- Delayed auto-run after game loads
 RegisterHook("/Script/Engine.PlayerController:ClientRestart", function()
     ExecuteWithDelay(3000, function()
-        Log("Player loaded - Press F11 to run validation tests")
+        Log("Player loaded - Press INSERT to run validation tests")
     end)
 end)
 
 Log("VTMB2SE Validation Test loaded")
-Log("Press F11 to run class validation tests")
+Log("Press INSERT to run class validation tests")
+Log("(F11 is reserved for UE4SS window toggle)")
+

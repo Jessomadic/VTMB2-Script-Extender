@@ -467,23 +467,75 @@ function VTMB2.Movement.SetCrouchSpeed(speed)
     return VTMB2.Attributes.Set("CrouchSpeed", speed)
 end
 
---- Get jump Z velocity
-function VTMB2.Movement.GetJumpZVelocity()
+--- Get jump height/velocity
+--- VTMB2 uses JumpHeight on the character or movement component
+function VTMB2.Movement.GetJumpHeight()
+    local player = VTMB2.GetPlayer()
+    if player then
+        -- Try player's JumpHeight first (VTMB2 specific)
+        if player.JumpHeight ~= nil then
+            return player.JumpHeight
+        end
+    end
+    
     local movement = VTMB2.Player.GetMovementComponent()
     if movement then
-        return movement.JumpZVelocity
+        -- Try JumpHeight on movement
+        if movement.JumpHeight ~= nil then
+            return movement.JumpHeight
+        end
+        -- Fallback to standard UE JumpZVelocity
+        if movement.JumpZVelocity ~= nil then
+            return movement.JumpZVelocity
+        end
     end
     return nil
 end
 
---- Set jump Z velocity
-function VTMB2.Movement.SetJumpZVelocity(velocity)
+--- Set jump height/velocity
+--- Tries multiple properties that could affect jump
+function VTMB2.Movement.SetJumpHeight(height)
+    local success = false
+    
+    local player = VTMB2.GetPlayer()
+    if player then
+        -- Try player's JumpHeight first
+        if player.JumpHeight ~= nil then
+            player.JumpHeight = height
+            success = true
+        end
+        
+        -- Try calling the traversal function
+        if player.WrestlerTraversalSetJumpHeight then
+            pcall(function() player:WrestlerTraversalSetJumpHeight(height) end)
+            success = true
+        end
+    end
+    
     local movement = VTMB2.Player.GetMovementComponent()
     if movement then
-        movement.JumpZVelocity = velocity
-        return true
+        -- Set JumpHeight on movement
+        if movement.JumpHeight ~= nil then
+            movement.JumpHeight = height
+            success = true
+        end
+        -- Also set JumpZVelocity
+        if movement.JumpZVelocity ~= nil then
+            movement.JumpZVelocity = height
+            success = true
+        end
     end
-    return false
+    
+    return success
+end
+
+-- Alias for backwards compatibility
+function VTMB2.Movement.GetJumpZVelocity()
+    return VTMB2.Movement.GetJumpHeight()
+end
+
+function VTMB2.Movement.SetJumpZVelocity(velocity)
+    return VTMB2.Movement.SetJumpHeight(velocity)
 end
 
 --- Get gravity scale
