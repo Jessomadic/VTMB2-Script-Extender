@@ -1,93 +1,70 @@
 # VTMB2SE Lua API Reference
 
-This document describes the VTMB2SE Lua API for modding Vampire: The Masquerade - Bloodlines 2.
-
-## Table of Contents
-
-- [Getting Started](#getting-started)
-- [VTMB2 Module](#vtmb2-module)
-  - [Core Functions](#core-functions)
-  - [Player Module](#player-module)
-  - [Abilities Module](#abilities-module)
-  - [Events Module](#events-module)
-  - [World Module](#world-module)
-- [Utils Module](#utils-module)
-- [Config Module](#config-module)
-- [UE4SS Base Functions](#ue4ss-base-functions)
+Complete API documentation for the VTMB2 Script Extender.
 
 ---
 
-## Getting Started
-
-### Loading the API
+## Quick Start
 
 ```lua
--- Load the main VTMB2 module
 local VTMB2 = require("VTMB2.VTMB2")
 
--- Load utility module
-local Utils = require("VTMB2.Utils")
+-- Initialize (called automatically, but can be explicit)
+VTMB2.Initialize()
 
--- Load config module
-local Config = require("VTMB2.Config")
-```
+-- Get player and check stats
+local player = VTMB2.GetPlayer()
+local health = VTMB2.Player.GetHealth()
+local blood = VTMB2.Player.GetBlood()
 
-### Basic Mod Structure
-
-```lua
--- my_mod/Scripts/main.lua
-
-local VTMB2 = require("VTMB2.VTMB2")
-local Utils = require("VTMB2.Utils")
-
--- Create a logger
-local Log = Utils.CreateLogger("MyMod")
-
--- Initialize
-Log.Log("My mod loaded!")
-
--- Register a keybind
-RegisterKeyBind(Key.F9, function()
-    local player = VTMB2.GetPlayer()
-    if player then
-        Log.Log("Player found: " .. Utils.GetFullName(player))
-    end
-end)
+-- Modify stats
+VTMB2.Movement.SetWalkSpeed(1000)
+VTMB2.Attributes.SetHealth(500)
 ```
 
 ---
 
-## VTMB2 Module
+## Core Functions
 
-### Core Functions
+### VTMB2.Initialize()
 
-#### `VTMB2.GetPlayer()`
-Returns the player character.
+Initialize the API. Called automatically when the module loads.
+
+```lua
+VTMB2.Initialize()
+```
+
+**Returns:** `boolean` - Success status
+
+---
+
+### VTMB2.GetPlayer()
+
+Get the player character.
 
 ```lua
 local player = VTMB2.GetPlayer()
-if player then
-    print("Player: " .. player:GetFullName() .. "\n")
-end
 ```
 
-**Returns:** `userdata|nil` - Player character or nil if not found
+**Returns:** `userdata|nil` - Player character object or nil
 
 ---
 
-#### `VTMB2.GetPlayerController()`
-Returns the player controller.
+### VTMB2.GetPlayerController()
+
+Get the player controller.
 
 ```lua
 local controller = VTMB2.GetPlayerController()
 ```
 
-**Returns:** `userdata|nil` - Player controller or nil if not found
+**Returns:** `userdata|nil` - Player controller object or nil
 
 ---
 
-#### `VTMB2.ClearCache()`
-Clears cached player references. Useful after level transitions.
+### VTMB2.ClearCache()
+
+Clear cached references. Useful after level transitions.
 
 ```lua
 VTMB2.ClearCache()
@@ -95,243 +72,577 @@ VTMB2.ClearCache()
 
 ---
 
-### Player Module
+## Attributes Module
 
-#### `VTMB2.Player.GetHealth()`
-Gets the player's current health.
+Access to all GAS (Gameplay Ability System) attributes.
+
+### VTMB2.Attributes.GetAttributeSet()
+
+Get the player's attribute set directly.
+
+```lua
+local attrSet = VTMB2.Attributes.GetAttributeSet()
+```
+
+**Returns:** `userdata|nil` - UWrestlerAttributeSet or nil
+
+---
+
+### VTMB2.Attributes.Get(name)
+
+Get any attribute by name.
+
+```lua
+local health = VTMB2.Attributes.Get("Health")
+local blood = VTMB2.Attributes.Get("Blood")
+```
+
+**Parameters:**
+- `name` (string) - Attribute name (e.g., "Health", "Blood", "MaxHealth")
+
+**Returns:** `number|nil` - Attribute value or nil
+
+---
+
+### VTMB2.Attributes.Set(name, value)
+
+Set any attribute by name.
+
+```lua
+VTMB2.Attributes.Set("Health", 500)
+```
+
+**Parameters:**
+- `name` (string) - Attribute name
+- `value` (number) - New value
+
+**Returns:** `boolean` - Success
+
+---
+
+### VTMB2.Attributes.GetAll()
+
+Get all attributes as a table.
+
+```lua
+local attrs = VTMB2.Attributes.GetAll()
+for name, value in pairs(attrs) do
+    print(name .. ": " .. value)
+end
+```
+
+**Returns:** `table` - Map of attribute name to value
+
+---
+
+### Health Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetHealth()` / `SetHealth(v)` | Current health |
+| `GetMaxHealth()` / `SetMaxHealth(v)` | Maximum health |
+| `GetHealthRegenRate()` / `SetHealthRegenRate(v)` | Regeneration rate |
+
+```lua
+local hp = VTMB2.Attributes.GetHealth()
+VTMB2.Attributes.SetHealth(VTMB2.Attributes.GetMaxHealth())  -- Full heal
+```
+
+---
+
+### Blood Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetBlood()` / `SetBlood(v)` | Current blood |
+| `GetMaxBlood()` / `SetMaxBlood(v)` | Maximum blood |
+
+```lua
+local blood = VTMB2.Attributes.GetBlood()
+VTMB2.Attributes.SetBlood(1000)  -- Refill blood
+```
+
+---
+
+### Shield Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetShield()` / `SetShield(v)` | Current shield |
+| `GetMaxShield()` / `SetMaxShield(v)` | Maximum shield |
+
+---
+
+### Stun Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetStun()` / `SetStun(v)` | Current stun value |
+| `GetMaxStun()` | Maximum stun |
+| `GetStunResistance()` / `SetStunResistance(v)` | Stun resistance |
+
+---
+
+### Armor Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetArmor()` / `SetArmor(v)` | Current armor |
+| `GetMaxArmor()` / `SetMaxArmor(v)` | Maximum armor |
+
+---
+
+### Combat Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetAttackPower()` / `SetAttackPower(v)` | Attack power |
+| `GetDamage()` / `SetDamage(v)` | Damage output |
+| `GetDamageCap()` | Maximum damage |
+
+---
+
+### Ammo Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetAmmo()` / `SetAmmo(v)` | Current ammo |
+| `GetMaxAmmo()` | Maximum ammo |
+
+---
+
+### Stealth Attributes
+
+| Function | Description |
+|----------|-------------|
+| `GetNoticeability()` / `SetNoticeability(v)` | Detection level |
+
+---
+
+### Ability Blood Pools
+
+```lua
+VTMB2.Attributes.GetStrikeAbilityBlood()
+VTMB2.Attributes.GetRelocateAbilityBlood()
+VTMB2.Attributes.GetMasteryAbilityBlood()
+VTMB2.Attributes.GetAffectAbilityBlood()
+```
+
+---
+
+## Player Module
+
+Convenience wrappers for common player operations.
+
+### VTMB2.Player.GetHealth() / SetHealth(v)
 
 ```lua
 local health = VTMB2.Player.GetHealth()
-if health then
-    print("Health: " .. health .. "\n")
-end
+VTMB2.Player.SetHealth(500)
 ```
-
-**Returns:** `number|nil` - Health value or nil
 
 ---
 
-#### `VTMB2.Player.SetHealth(value)`
-Sets the player's health.
-
-```lua
-VTMB2.Player.SetHealth(100)
-```
-
-**Parameters:**
-- `value` (number) - The health value to set
-
-**Returns:** `boolean` - Success
-
----
-
-#### `VTMB2.Player.GetBlood()`
-Gets the player's current blood (vampire resource).
+### VTMB2.Player.GetBlood() / SetBlood(v)
 
 ```lua
 local blood = VTMB2.Player.GetBlood()
+VTMB2.Player.SetBlood(1000)
 ```
-
-**Returns:** `number|nil` - Blood value or nil
 
 ---
 
-#### `VTMB2.Player.SetBlood(value)`
-Sets the player's blood.
+### VTMB2.Player.IsDead()
+
+Check if the player is dead.
 
 ```lua
-VTMB2.Player.SetBlood(50)
-```
-
-**Parameters:**
-- `value` (number) - The blood value to set
-
-**Returns:** `boolean` - Success
-
----
-
-#### `VTMB2.Player.GetMovementComponent()`
-Gets the player's movement component.
-
-```lua
-local movement = VTMB2.Player.GetMovementComponent()
-if movement then
-    print("Max Speed: " .. movement.MaxWalkSpeed .. "\n")
+if VTMB2.Player.IsDead() then
+    print("Player is dead!")
 end
 ```
 
-**Returns:** `userdata|nil` - Movement component or nil
+**Returns:** `boolean`
 
 ---
 
-#### `VTMB2.Player.GetWalkSpeed()`
-Gets the player's current walk speed.
+### VTMB2.Player.IsInCombat()
+
+Check if the player is in combat.
 
 ```lua
-local speed = VTMB2.Player.GetWalkSpeed()
+if VTMB2.Player.IsInCombat() then
+    print("Combat active!")
+end
 ```
 
-**Returns:** `number|nil` - Walk speed or nil
+**Returns:** `boolean`
 
 ---
 
-#### `VTMB2.Player.SetWalkSpeed(speed)`
-Sets the player's walk speed.
+### VTMB2.Player.GetMovementComponent()
+
+Get the player's movement component.
 
 ```lua
-VTMB2.Player.SetWalkSpeed(1000)  -- Faster movement
+local movement = VTMB2.Player.GetMovementComponent()
+movement.MaxWalkSpeed = 1000
 ```
 
-**Parameters:**
-- `speed` (number) - The walk speed to set
-
-**Returns:** `boolean` - Success
+**Returns:** `userdata|nil` - Movement component
 
 ---
 
-#### `VTMB2.Player.GetAttributeSet()`
-Gets the player's Gameplay Ability System attribute set.
+### VTMB2.Player.GetAttributeSet()
+
+Get the player's attribute set.
 
 ```lua
 local attrs = VTMB2.Player.GetAttributeSet()
 ```
 
-**Returns:** `userdata|nil` - Attribute set or nil
+**Returns:** `userdata|nil` - Attribute set
 
 ---
 
-### Events Module
+## Movement Module
 
-#### `VTMB2.Events.OnPlayerSpawn(callback)`
-Register a callback for when the player spawns.
+Control player movement properties.
 
-```lua
-VTMB2.Events.OnPlayerSpawn(function(player)
-    print("Player spawned: " .. player:GetFullName() .. "\n")
-end)
-```
+### Speed Functions
 
-**Parameters:**
-- `callback` (function) - Function to call with player as argument
-
----
-
-#### `VTMB2.Events.OnCombatStart(callback)`
-Register a callback for when combat starts.
+| Function | Description |
+|----------|-------------|
+| `GetWalkSpeed()` / `SetWalkSpeed(v)` | Walk speed |
+| `GetSprintSpeed()` / `SetSprintSpeed(v)` | Sprint speed |
+| `GetCrouchSpeed()` / `SetCrouchSpeed(v)` | Crouch speed |
 
 ```lua
-VTMB2.Events.OnCombatStart(function()
-    print("Combat started!\n")
-end)
+-- Double walk speed
+local current = VTMB2.Movement.GetWalkSpeed()
+VTMB2.Movement.SetWalkSpeed(current * 2)
 ```
 
 ---
 
-#### `VTMB2.Events.OnDialogueStart(callback)`
-Register a callback for when dialogue starts.
+### Jump and Gravity
+
+| Function | Description |
+|----------|-------------|
+| `GetJumpZVelocity()` / `SetJumpZVelocity(v)` | Jump height |
+| `GetGravityScale()` / `SetGravityScale(v)` | Gravity multiplier |
 
 ```lua
-VTMB2.Events.OnDialogueStart(function(dialogueData)
-    print("Dialogue started\n")
-end)
+-- Super jump
+VTMB2.Movement.SetJumpZVelocity(1500)
+
+-- Low gravity
+VTMB2.Movement.SetGravityScale(0.5)
 ```
 
 ---
 
-#### `VTMB2.Events.OnQuestUpdate(callback)`
-Register a callback for quest updates.
+### Acceleration and Friction
 
-```lua
-VTMB2.Events.OnQuestUpdate(function(questData)
-    print("Quest updated\n")
-end)
-```
+| Function | Description |
+|----------|-------------|
+| `GetAcceleration()` / `SetAcceleration(v)` | Movement acceleration |
+| `GetGroundFriction()` / `SetGroundFriction(v)` | Ground friction |
 
 ---
 
-### World Module
+### Movement State
 
-#### `VTMB2.World.FindAllOfClass(className)`
-Find all actors of a given class.
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `IsGliding()` | boolean | Check if gliding |
+| `IsSprinting()` | boolean | Check if sprinting |
+| `IsCrouching()` | boolean | Check if crouching |
 
 ```lua
-local enemies = VTMB2.World.FindAllOfClass("BP_EnemyCharacterBase_C")
-for _, enemy in ipairs(enemies) do
-    print("Enemy: " .. enemy:GetFullName() .. "\n")
+if VTMB2.Movement.IsSprinting() then
+    print("Player is sprinting!")
 end
 ```
 
+---
+
+## Combat Module
+
+Combat-related functions.
+
+### VTMB2.Combat.GetAttackPower() / SetAttackPower(v)
+
+```lua
+local power = VTMB2.Combat.GetAttackPower()
+VTMB2.Combat.SetAttackPower(power * 2)  -- Double damage
+```
+
+---
+
+### VTMB2.Combat.GetDamage() / SetDamage(v)
+
+```lua
+VTMB2.Combat.SetDamage(9999)  -- One-hit kills
+```
+
+---
+
+### VTMB2.Combat.GetStunResistance() / SetStunResistance(v)
+
+```lua
+VTMB2.Combat.SetStunResistance(1000)  -- Immune to stun
+```
+
+---
+
+## Abilities Module
+
+Gameplay Ability System access.
+
+### VTMB2.Abilities.GetASC()
+
+Get the Ability System Component.
+
+```lua
+local asc = VTMB2.Abilities.GetASC()
+```
+
+**Returns:** `userdata|nil` - AbilitySystemComponent
+
+---
+
+### VTMB2.Abilities.GetAll()
+
+Get all active abilities (placeholder - requires GAS integration).
+
+```lua
+local abilities = VTMB2.Abilities.GetAll()
+```
+
+**Returns:** `table` - Array of ability info
+
+---
+
+## Dialogue Module
+
+Hera Dialogue System access.
+
+### VTMB2.Dialogue.GetManager()
+
+Get the dialogue manager.
+
+```lua
+local manager = VTMB2.Dialogue.GetManager()
+```
+
+**Returns:** `userdata|nil` - Dialogue manager
+
+---
+
+### VTMB2.Dialogue.IsActive()
+
+Check if dialogue is currently active.
+
+```lua
+if VTMB2.Dialogue.IsActive() then
+    print("In dialogue!")
+end
+```
+
+**Returns:** `boolean`
+
+---
+
+## World Module
+
+World queries and game state access.
+
+### VTMB2.World.FindAllOfClass(className)
+
+Find all actors of a class.
+
+```lua
+local enemies = VTMB2.World.FindAllOfClass("WrestlerEnemyCharacter")
+```
+
 **Parameters:**
-- `className` (string) - The class name to search for
+- `className` (string) - Class name to search for
 
 **Returns:** `table` - Array of actors
 
 ---
 
-#### `VTMB2.World.FindFirstOfClass(className)`
-Find first actor of a given class.
+### VTMB2.World.FindFirstOfClass(className)
+
+Find the first actor of a class.
 
 ```lua
-local boss = VTMB2.World.FindFirstOfClass("BP_EnemyBoss_C")
+local enemy = VTMB2.World.FindFirstOfClass("WrestlerEnemyCharacter")
 ```
 
 **Returns:** `userdata|nil` - Actor or nil
 
 ---
 
-#### `VTMB2.World.GetAllEnemies()`
-Get all enemy characters in the world.
+### VTMB2.World.GetAllEnemies()
+
+Get all enemy characters.
 
 ```lua
 local enemies = VTMB2.World.GetAllEnemies()
-print("Enemy count: " .. #enemies .. "\n")
+print("Enemy count: " .. #enemies)
 ```
 
 **Returns:** `table` - Array of enemy actors
 
 ---
 
-## Utils Module
+### VTMB2.World.GetAllNPCs()
 
-### Logging
-
-#### `Utils.CreateLogger(prefix)`
-Create a logger with a specific prefix.
+Get all NPC characters.
 
 ```lua
+local npcs = VTMB2.World.GetAllNPCs()
+```
+
+**Returns:** `table` - Array of NPC actors
+
+---
+
+### VTMB2.World.GetGameMode()
+
+Get the current game mode.
+
+```lua
+local gm = VTMB2.World.GetGameMode()
+```
+
+**Returns:** `userdata|nil` - Game mode
+
+---
+
+### VTMB2.World.GetGameState()
+
+Get the current game state.
+
+```lua
+local gs = VTMB2.World.GetGameState()
+```
+
+**Returns:** `userdata|nil` - Game state
+
+---
+
+### VTMB2.World.GetCheatManager()
+
+Get the cheat manager.
+
+```lua
+local cm = VTMB2.World.GetCheatManager()
+```
+
+**Returns:** `userdata|nil` - Cheat manager
+
+---
+
+## Events Module
+
+Register callbacks for game events.
+
+### VTMB2.Events.OnPlayerSpawn(callback)
+
+Called when the player spawns.
+
+```lua
+VTMB2.Events.OnPlayerSpawn(function(player)
+    print("Player spawned: " .. player:GetFullName())
+end)
+```
+
+---
+
+### VTMB2.Events.OnHealthChanged(callback)
+
+Called when health changes.
+
+```lua
+VTMB2.Events.OnHealthChanged(function(current, max)
+    print("Health: " .. current .. "/" .. max)
+end)
+```
+
+---
+
+### VTMB2.Events.OnBloodChanged(callback)
+
+Called when blood changes.
+
+```lua
+VTMB2.Events.OnBloodChanged(function(current, max)
+    print("Blood: " .. current .. "/" .. max)
+end)
+```
+
+---
+
+### VTMB2.Events.OnCombatStart(callback) / OnCombatEnd(callback)
+
+Called when entering/leaving combat.
+
+```lua
+VTMB2.Events.OnCombatStart(function()
+    print("Combat started!")
+end)
+```
+
+---
+
+### VTMB2.Events.OnDialogueStart(callback) / OnDialogueEnd(callback)
+
+Called when dialogue starts/ends.
+
+```lua
+VTMB2.Events.OnDialogueStart(function()
+    print("Dialogue started!")
+end)
+```
+
+---
+
+### VTMB2.Events.OnDeath(callback)
+
+Called when the player dies.
+
+```lua
+VTMB2.Events.OnDeath(function()
+    print("Player died!")
+end)
+```
+
+---
+
+## Utility Module
+
+Helper functions for common operations.
+
+### Utils.CreateLogger(prefix)
+
+Create a logger with a prefix.
+
+```lua
+local Utils = require("VTMB2.Utils")
 local Log = Utils.CreateLogger("MyMod")
-Log.Log("Normal message")
-Log.Error("Error message")
-Log.Warn("Warning message")
-Log.Debug("Debug message")
+
+Log.Log("Hello!")     -- [MyMod] Hello!
+Log.Warn("Warning!")  -- [MyMod][WARN] Warning!
+Log.Error("Error!")   -- [MyMod][ERROR] Error!
 ```
 
-### Safe Access
+---
 
-#### `Utils.SafeGet(obj, propertyName)`
-Safely get a property without errors.
+### Utils.IsValid(object)
 
-```lua
-local health = Utils.SafeGet(player, "Health")
-```
-
-#### `Utils.SafeSet(obj, propertyName, value)`
-Safely set a property.
-
-```lua
-Utils.SafeSet(player, "Health", 100)
-```
-
-#### `Utils.SafeCall(obj, methodName, ...)`
-Safely call a method.
-
-```lua
-local result = Utils.SafeCall(actor, "GetFullName")
-```
-
-### Validation
-
-#### `Utils.IsValid(obj)`
 Check if an object is valid.
 
 ```lua
@@ -340,247 +651,118 @@ if Utils.IsValid(player) then
 end
 ```
 
-#### `Utils.GetFullName(obj)`
-Get object's full name safely.
+---
+
+### Utils.SafeGet(object, property, default)
+
+Safely get a property with default.
 
 ```lua
-local name = Utils.GetFullName(player)
+local speed = Utils.SafeGet(movement, "MaxWalkSpeed", 600)
 ```
 
-#### `Utils.GetClassName(obj)`
-Get object's class name safely.
+---
 
-```lua
-local className = Utils.GetClassName(player)
-```
+### Utils.Delay(ms, callback)
 
-### Delayed Execution
-
-#### `Utils.Delay(delayMs, callback)`
 Execute a function after a delay.
 
 ```lua
 Utils.Delay(1000, function()
-    print("1 second later!\n")
+    print("1 second later!")
 end)
 ```
 
-#### `Utils.SetInterval(intervalMs, callback)`
+---
+
+### Utils.SetInterval(ms, callback)
+
 Execute a function repeatedly.
 
 ```lua
-local timer = Utils.SetInterval(5000, function()
-    print("Every 5 seconds\n")
+local id = Utils.SetInterval(1000, function()
+    print("Every second!")
     return true  -- Return false to stop
 end)
-
--- To stop:
-timer:Stop()
 ```
 
 ---
 
 ## Config Module
 
-### Configuration Manager
+JSON-based configuration system.
+
+### Config.CreateManager(modPath, defaults)
+
+Create a config manager for your mod.
 
 ```lua
 local Config = require("VTMB2.Config")
-
--- Create a config manager for your mod
 local config = Config.CreateManager("Mods/MyMod", {
-    -- Default values
     speed = 600,
-    enabled = true,
-    name = "Player"
+    godMode = false
 })
 
--- Load config (auto-merges with defaults)
 config:Load()
-
--- Get a value
-local speed = config:Get("speed", 600)
-
--- Set a value
-config:Set("speed", 1000)
-
--- Save to file
+local speed = config:Get("speed")
+config:Set("speed", 1200)
 config:Save()
 ```
 
 ---
 
-## UE4SS Base Functions
-
-These are provided by UE4SS and available in all mods.
-
-### Object Finding
+## Complete Example
 
 ```lua
--- Find first object of class
-local obj = FindFirstOf("ClassName")
-
--- Find all objects of class
-local objects = FindAllOf("ClassName")
-```
-
-### Hooks
-
-```lua
--- Register a hook on a function
-RegisterHook("/Script/Engine.PlayerController:ClientRestart", function(Context)
-    local controller = Context:get()
-    print("Player restarted\n")
-end)
-
--- Pre-hook (before function executes)
-RegisterHook("/Script/Game.Class:Function", { PreHook = true }, function(Context)
-    -- Runs before the function
-end)
-```
-
-### Keybinds
-
-```lua
--- Register a keybind
-RegisterKeyBind(Key.F5, function()
-    print("F5 pressed!\n")
-end)
-
--- With modifiers
-RegisterKeyBind(Key.F5, { ModifierKeys.CONTROL }, function()
-    print("Ctrl+F5 pressed!\n")
-end)
-```
-
-### Console Commands
-
-```lua
--- Register a console command
-RegisterConsoleCommandHandler("mycommand", function(FullCommand, Parameters)
-    print("Command: " .. FullCommand .. "\n")
-    for i, param in ipairs(Parameters) do
-        print("Param " .. i .. ": " .. param .. "\n")
-    end
-    return true  -- Command handled
-end)
-```
-
-### Execution
-
-```lua
--- Execute a console command
-ExecuteInGameThread(function()
-    -- Code that must run in game thread
-end)
-
--- Delayed execution
-ExecuteWithDelay(1000, function()
-    print("1 second later\n")
-end)
-```
-
----
-
-## Key Codes
-
-Common key codes for `RegisterKeyBind`:
-
-| Key | Code |
-|-----|------|
-| F1-F12 | `Key.F1` - `Key.F12` |
-| 0-9 | `Key.ZERO` - `Key.NINE` or `Key.NUM_ZERO` - `Key.NUM_NINE` |
-| A-Z | `Key.A` - `Key.Z` |
-| Arrow Keys | `Key.UP`, `Key.DOWN`, `Key.LEFT`, `Key.RIGHT` |
-| Modifiers | `ModifierKeys.CONTROL`, `ModifierKeys.SHIFT`, `ModifierKeys.ALT` |
-
----
-
-## Example: Complete Mod
-
-```lua
---[[
-    My VTMB2 Mod
-    Demonstrates full API usage
-]]--
-
 local VTMB2 = require("VTMB2.VTMB2")
 local Utils = require("VTMB2.Utils")
-local Config = require("VTMB2.Config")
 
 local Log = Utils.CreateLogger("MyMod")
 
 -- Configuration
-local config = Config.CreateManager("Mods/MyMod", {
+local Config = {
     speedMultiplier = 1.5,
-    showNotifications = true
-})
-config:Load()
+    godMode = false
+}
 
--- State
-local originalSpeed = nil
-
--- Functions
-local function ToggleSpeedBoost()
-    local current = VTMB2.Player.GetWalkSpeed()
-    if not current then
-        Log.Warn("Could not get player speed")
-        return
-    end
-    
-    if originalSpeed then
-        -- Restore original
-        VTMB2.Player.SetWalkSpeed(originalSpeed)
-        Log.Log("Speed restored to " .. originalSpeed)
-        originalSpeed = nil
-    else
-        -- Apply boost
-        originalSpeed = current
-        local newSpeed = current * config:Get("speedMultiplier")
-        VTMB2.Player.SetWalkSpeed(newSpeed)
-        Log.Log("Speed boosted to " .. newSpeed)
-    end
-end
-
--- Events
+-- On player spawn
 VTMB2.Events.OnPlayerSpawn(function(player)
-    Log.Log("Welcome back, Kindred!")
-    originalSpeed = nil  -- Reset on respawn
+    Log.Log("Player loaded!")
+    
+    -- Apply speed boost
+    local speed = VTMB2.Movement.GetWalkSpeed() or 600
+    VTMB2.Movement.SetWalkSpeed(speed * Config.speedMultiplier)
 end)
 
--- Keybinds
+-- Toggle god mode
 RegisterKeyBind(Key.F9, function()
-    ToggleSpeedBoost()
+    Config.godMode = not Config.godMode
+    
+    if Config.godMode then
+        VTMB2.Attributes.SetMaxHealth(99999)
+        VTMB2.Attributes.SetHealth(99999)
+        Log.Log("God mode ENABLED")
+    else
+        Log.Log("God mode DISABLED")
+    end
 end)
 
--- Console command
-RegisterConsoleCommandHandler("mymod", function(_, params)
-    if #params == 0 then
-        Log.Log("Commands: speed <multiplier>, reset")
-        return true
-    end
-    
-    if params[1] == "speed" and params[2] then
-        config:Set("speedMultiplier", tonumber(params[2]) or 1.5)
-        config:Save()
-        Log.Log("Speed multiplier set to " .. params[2])
-        return true
-    elseif params[1] == "reset" then
-        if originalSpeed then
-            VTMB2.Player.SetWalkSpeed(originalSpeed)
-            originalSpeed = nil
-            Log.Log("Speed reset")
-        end
-        return true
-    end
-    
-    return false
+-- Show stats
+RegisterKeyBind(Key.F10, function()
+    Log.Log("=== Player Stats ===")
+    Log.Log("Health: " .. (VTMB2.Player.GetHealth() or "N/A"))
+    Log.Log("Blood: " .. (VTMB2.Player.GetBlood() or "N/A"))
+    Log.Log("Speed: " .. (VTMB2.Movement.GetWalkSpeed() or "N/A"))
+    Log.Log("Enemies: " .. #VTMB2.World.GetAllEnemies())
 end)
 
--- Init
-Log.Log("Mod loaded! Press F9 to toggle speed boost")
+Log.Log("MyMod loaded! Press F9 for god mode, F10 for stats")
 ```
 
 ---
 
-For more examples, see the `VTMB2SE_Examples` mod in the distribution.
+## See Also
+
+- [Game Classes Reference](GAME_CLASSES.md) - Detailed class documentation
+- [Installation Guide](INSTALL.md) - How to install VTMB2SE
+- [UE4SS Documentation](https://docs.ue4ss.com/) - Base framework docs
