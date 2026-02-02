@@ -1,0 +1,26 @@
+; VTMB2SE Mod List
+; Format: ModName : 1 (enabled) or 0 (disabled)
+; Mods are loaded in order listed
+
+; === Core UE4SS Mods ===
+CheatManagerEnablerMod : 1
+ConsoleEnablerMod : 1
+ConsoleCommandsMod : 1
+BPModLoaderMod : 1
+BPML_GenericFunctions : 1
+LineTraceMod : 0
+ActorDumperMod : 0
+SplitScreenMod : 0
+jsbLuaProfilerMod : 0
+
+; === VTMB2SE Core ===
+VTMB2SE_Core : 1
+
+; === VTMB2SE Examples (disable in production) ===
+VTMB2SE_Examples : 0
+
+; === Your Mods Go Below ===
+
+
+; Built-in keybinds - must be last!
+Keybinds : 1

@@ -1,0 +1,42 @@
+# VTMB2SE - Git Ignore
+
+# Build artifacts
+build/
+out/
+*.dll
+*.pdb
+*.exe
+*.log
+
+# But keep specific dist files
+!dist/Win64/dwmapi.dll
+!dist/Win64/UE4SS.dll
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temp
+*.tmp
+*.temp
+*.bak
+
+# Logs
+UE4SS.log
+*.log
+
+# Cache
+__pycache__/
+*.pyc
+.cache/
+
+# Package output
+*.zip
+releases/
